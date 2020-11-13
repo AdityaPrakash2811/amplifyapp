@@ -6,21 +6,55 @@ import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react'
 
 //Added Later for api
 import React, { useState, useEffect } from 'react';
-import { API, /*for Storage */Storage } from 'aws-amplify';
+import { API, /*for Storage */Storage, /*Subscription */graphqlOperation } from 'aws-amplify';
 import { listTodos } from './graphql/queries';
 import { createTodo as createTodoMutation, deleteTodo as deleteTodoMutation } from './graphql/mutations';
+//END
+
+//Added for Subscription
+import {onCreateTodo} from '../src/graphql/subscriptions'
+//End
+
 
 const initialFormState = { name: '', description: '' }
-//End 
+
 
 function App() {
 
   const [notes, setNotes] = useState([]);
   const [formData, setFormData] = useState(initialFormState);
 
+  /*useEffect(() => {
+    fetchNotes();
+    setupSubscription();
+
+    return ()=>{
+      subscriptionOnCreate.unsubscribe();
+    };
+  }, [fetchNotes, setupSubscription, subscriptionOnCreate]);*/
+
+
+  //for subscription
+  let subscriptionOnCreate;
+
+  function setupSubscription(){
+    subscriptionOnCreate=API.graphql(
+      graphqlOperation(onCreateTodo)
+    ).subscribe({
+      next: (todo) =>{
+        fetchNotes();
+      }
+    });
+  }
+
   useEffect(() => {
     fetchNotes();
-  }, []);
+    setupSubscription();
+
+    return ()=>{
+      subscriptionOnCreate.unsubscribe();
+    };
+  }, [fetchNotes, setupSubscription, subscriptionOnCreate]);
 
   //for Storage
   async function onChange(e) {
